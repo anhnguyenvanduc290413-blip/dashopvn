@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashop - Cửa hàng FreeFire</title>
+    <style>
+        /* CSS CƠ BẢN & GIAO DIỆN CHUNG */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f8; color: #333; }
+        body.loading { overflow: hidden; } 
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        
+        /* MÀU SẮC CHỦ ĐẠO */
+        :root { --primary-red: #e30019; --hover-red: #cc0017; --white: #ffffff; --bg-gray: #f0f0f0; }
+
+        /* MÀN HÌNH CHỜ (PRELOADER) */
+        #preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #preloader img { height: 80px; max-width: 80%; animation: pulse 1.5s infinite; }
+        /* Đã làm thanh chạy mỏng lại 4px */
+        .loading-bar-container { width: 300px; max-width: 80%; height: 4px; background: #e0e0e0; margin-top: 30px; border-radius: 10px; overflow: hidden; }
+        .loading-bar-fill { height: 100%; width: 0%; background: var(--primary-red); transition: width 0.1s linear; border-radius: 10px; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* HEADER TẦNG 1: TÌM KIẾM & TÀI KHOẢN (LUÔN ĐI THEO) */
+        .header-top-full { position: sticky; top: 0; z-index: 1001; background: var(--white); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; width: 100%; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        /* Đã làm Logo to lên một tí ti (55px) */
+        .logo img { height: 55px; cursor: pointer; transition: 0.3s; }
+        .logo img:hover { transform: scale(1.05); }
+        
+        .search-bar { display: flex; border: 1px solid #ccc; border-radius: 25px; overflow: hidden; width: 50%; }
+        .search-bar select { border: none; padding: 10px; background: #f9f9f9; outline: none; border-right: 1px solid #ccc; }
+        .search-bar input { flex: 1; border: none; padding: 10px 15px; outline: none; }
+        .search-bar button { background: var(--primary-red); color: white; border: none; padding: 0 20px; cursor: pointer; }
+        .user-actions { display: flex; gap: 20px; align-items: center; }
+        .account-btn, .cart-btn { display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 12px; }
+        .cart-btn { position: relative; }
+        .cart-count { position: absolute; top: -5px; right: -10px; background: var(--primary-red); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+
+        /* MENU TẦNG 2 */
+        .main-nav { background: var(--primary-red); color: white; position: relative; z-index: 1000; }
+        .nav-container { display: flex; justify-content: space-between; align-items: center; height: 50px; }
+        .menu-btn { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; padding: 0 15px; border-right: 1px solid rgba(255,255,255,0.2); height: 100%; }
+        .nav-links { display: flex; gap: 30px; font-weight: 500; }
+        .nav-links li { cursor: pointer; }
+        .nav-links li:hover { text-decoration: underline; }
+        .hotline-top { font-weight: bold; }
+
+        /* SLIDER BANNER CHÍNH CÓ 3 ẢNH NHỎ */
+        .banner-section { display: flex; gap: 10px; margin-top: 15px; height: 450px; }
+        .main-banner { flex: 2; overflow: hidden; position: relative; border-radius: 8px; background: #000; cursor: pointer; }
+        .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.8s ease-in-out, transform 0.5s ease; object-fit: cover; }
+        .slide.active { opacity: 1; z-index: 1; }
+        .main-banner:hover .slide.active { transform: scale(1.05); } 
+        .side-banners { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .side-banners img { width: 100%; height: calc(33.33% - 6.66px); object-fit: cover; border-radius: 8px; }
+
+        /* THANH 4 MỤC TRẮNG */
+        .features-bar { background: white; display: flex; justify-content: space-between; padding: 20px; margin-top: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; font-weight: bold; }
+        .features-bar div { flex: 1; border-right: 1px solid #eee; }
+        .features-bar div:last-child { border: none; }
+
+        /* DANH SÁCH SẢN PHẨM */
+        .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 20px; }
+        .product-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; transition: 0.3s; padding-bottom: 15px;}
+        .product-card img { width: 100%; height: 160px; object-fit: cover; }
+        .product-info { padding: 15px; text-align: center; }
+        .product-name { font-weight: bold; font-size: 14px; margin-bottom: 10px; height: 40px; overflow: hidden; }
+        .product-price { color: var(--primary-red); font-weight: bold; font-size: 16px; }
+        .buy-btn-container { position: absolute; bottom: -50px; left: 0; width: 100%; background: rgba(255,255,255,0.9); transition: 0.3s; text-align: center; padding: 10px 0; }
+        .product-card:hover .buy-btn-container { bottom: 0; }
+        .buy-btn { background: var(--primary-red); color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .view-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; z-index: 2;}
+
+        /* PHẦN NHIỆM VỤ XU */
+        #coin-section { display: none; margin-top: 20px; }
+        .coin-board { background: white; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .coin-amount { font-size: 30px; color: #ff9900; font-weight: bold; margin: 10px 0; }
+        .task-list { text-align: left; background: #fafafa; padding: 15px; border-radius: 8px; }
+        .task-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #ddd; }
+        .task-btn { background: #000; color: white; padding: 5px 15px; border-radius: 5px; cursor: pointer; border: none; }
+        .task-done { color: green; font-weight: bold; display: none; }
+        .video-ad-container { display: none; margin-top: 20px; text-align: center; }
+        .progress-bar { width: 100%; height: 10px; background: #eee; border-radius: 5px; margin-top: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #ffcc00; width: 0%; transition: width 1s linear; }
+
+        /* FOOTER */
+        footer { background: white; margin-top: 50px; padding: 40px 0 20px; border-top: 1px solid #ddd; text-align: center; }
+        .footer-social img { width: 30px; margin: 0 10px; }
+        .floating-buttons { position: fixed; right: 20px; bottom: 50px; display: flex; flex-direction: column; gap: 10px; z-index: 999; }
+        .float-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--primary-red); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold;}
+        .float-zalo { background: #0068ff; }
+        
+        /* ẢNH NỔI GÓC TRÁI (EVENT) */
+        #floating-event { position: fixed; left: 20px; bottom: 30px; z-index: 998; cursor: pointer; animation: bounce 2s infinite ease-in-out;}
+        .close-event { position: absolute; top: -10px; right: -10px; background: red; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; cursor: pointer; border: 2px solid white; z-index: 999;}
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        /* THÔNG BÁO QUAN TRỌNG KHI VÀO WEB */
+        #welcome-notice { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10005; justify-content: center; align-items: center; }
+        .notice-box { background: white; padding: 25px; border-radius: 12px; width: 400px; max-width: 90%; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .notice-box h2 { text-align: center; color: var(--primary-red); margin-bottom: 15px; font-size: 22px; }
+        .notice-box ul { margin-left: 15px; list-style-type: decimal; line-height: 1.6; }
+        .notice-box li { margin-bottom: 10px; font-size: 15px; }
+
+        /* MODAL VÒNG QUAY MAY MẮN */
+        #wheel-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10002; justify-content: center; align-items: center; overflow-y: auto; padding: 20px; }
+        .wheel-content { background: white; padding: 30px; border-radius: 15px; width: 400px; max-width: 100%; text-align: center; position: relative; margin: auto; }
+        .wheel-container { position: relative; width: 300px; height: 300px; margin: 0 auto 20px auto; border-radius: 50%; border: 5px solid var(--primary-red); overflow: hidden; box-shadow: 0 0 15px rgba(227, 0, 25, 0.5); }
+        /* Tạo background vòng quay bằng gradient chia 5 mảng */
+        .wheel { width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#f1c40f 0deg 72deg, #e74c3c 72deg 144deg, #3498db 144deg 216deg, #2ecc71 216deg 288deg, #9b59b6 288deg 360deg); transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99); position: relative; }
+        .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: white; border-radius: 50%; z-index: 2; border: 3px solid #333; }
+        .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid #333; z-index: 3; }
+        .wheel-text { position: absolute; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; font-size: 14px; }
+        /* Vị trí chữ trên vòng quay */
+        .wt-1 { top: 20%; left: 60%; transform: rotate(36deg); }
+        .wt-2 { top: 60%; left: 75%; transform: rotate(108deg); }
+        .wt-3 { bottom: 15%; left: 35%; transform: rotate(180deg); }
+        .wt-4 { top: 55%; left: 10%; transform: rotate(252deg); }
+        .wt-5 { top: 15%; left: 25%; transform: rotate(324deg); }
+        
+        .wheel-form input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
+        .wheel-form button { background: var(--primary-red); color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        .wheel-form button:hover { background: #b30014; }
+
+        /* MODAL AUTH DÙNG CHUNG */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 400px; max-width: 90%; position: relative; }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; color: #333; font-weight: bold; z-index: 10;}
+        .modal input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        .modal button { width: 100%; padding: 10px; background: var(--primary-red); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px;}
+        .switch-auth { text-align: center; margin-top: 15px; font-size: 13px; color: blue; cursor: pointer; }
+
+        /* CÁC PAGE KHÁC */
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+        .sub-page-content { background: white; padding: 30px; border-radius: 8px; margin-top: 20px; min-height: 400px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .sub-page-content h2 { color: var(--primary-red); margin-bottom: 20px; border-bottom: 2px solid var(--primary-red); padding-bottom: 10px; display: inline-block; }
+
+        #admin-panel { display: none; background: #fff3f3; padding: 10px; border: 1px solid red; margin-top: 10px; text-align: center; font-weight: bold; color: red;}
+    </style>
+</head>
+<body class="loading">
+
+    <!-- MÀN HÌNH CHỜ (PRELOADER) -->
+    <div id="preloader">
+        <img src="https://lh3.googleusercontent.com/sitesv/AA5AbUAZkXso_hm8L7MuFQj6THZm-mQaSblYha4OEKKZYHISYUmgF4tJwMhdJ_tVyB13gESPFa0khFstBoHyGliBjFwyZoLzU4JGS479-b0Jori0S43r8Dv8iebJQ_3y1y5Q4zylavrK3hMlg3H1YJKAts4nT4BGMSblup-1DpCK54eIz4rf_cPscFn2ANO1z2nZV3DXR6txvOQDFYXYwT0ES1GsCu_TBImqKTHGlwvwIKs=w1280" alt="Dashop Logo">
+        <div class="loading-bar-container">
+            <div class="loading-bar-fill" id="loading-bar-fill"></div>
+        </div>
+        <!-- Đã xóa chữ "Đang tải dữ liệu..." theo yêu cầu -->
+    </div>
+
+    <!-- THÔNG BÁO QUAN TRỌNG KHI VÀO TRANG CHÍNH -->
+    <div id="welcome-notice">
+        <div class="notice-box">
+            <span class="close-modal" onclick="closeWelcomeNotice()" style="background: #eee; padding: 0 8px; border-radius: 50%;">×</span>
+            <h2><b>Thông báo quan trọng</b></h2>
+            <ul>
+                <li>Vùi quy định của chính phủ hiện tại một số sản phẩm sẽ không hoạt động</li>
+                <li>Để kiếm xu hãy làm nhiệm vụ hàng ngày để có xu đổi sản phẩm miễn phí</li>
+                <li>Vui lòng đăng nhập hoặc đăng ký nếu chưa có tài khoản nếu bạn không có</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- HEADER TẦNG 1 MÀU TRẮNG LUÔN ĐI THEO -->
+    <div class="header-top-full">
+        <div class="logo" onclick="switchPage('home')">
+            <img src="https://lh3.googleusercontent.com/sitesv/AA5AbUAZkXso_hm8L7MuFQj6THZm-mQaSblYha4OEKKZYHISYUmgF4tJwMhdJ_tVyB13gESPFa0khFstBoHyGliBjFwyZoLzU4JGS479-b0Jori0S43r8Dv8iebJQ_3y1y5Q4zylavrK3hMlg3H1YJKAts4nT4BGMSblup-1DpCK54eIz4rf_cPscFn2ANO1z2nZV3DXR6txvOQDFYXYwT0ES1GsCu_TBImqKTHGlwvwIKs=w1280" alt="Dashop Logo">
+        </div>
+        <div class="search-bar">
+            <select id="search-category">
+                <option value="all">Danh mục sản phẩm</option>
+                <option value="combo">Combo</option>
+                <option value="nhay">Độ nhạy</option>
+                <option value="file">File hỗ trợ</option>
+            </select>
+            <input type="text" placeholder="Tìm theo tên sản phẩm...">
+            <button>🔍</button>
+        </div>
+        <div class="user-actions">
+            <div class="account-btn" onclick="openAuthModal()">
+                <span id="user-display-name">Tài khoản<br><b>Khách</b></span>
+            </div>
+            <div class="cart-btn" onclick="viewCart()">
+                <span>🛒 Giỏ hàng</span>
+                <div class="cart-count" id="cart-counter">0</div>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="main-nav">
+            <div class="container nav-container">
+                <div class="menu-btn" onclick="switchPage('products')">
+                    <span>≡ Danh mục sản phẩm</span>
+                </div>
+                <ul class="nav-links">
+                    <li onclick="switchPage('home')">Trang chủ</li>
+                    <li onclick="switchPage('about')">Giới thiệu</li>
+                    <li onclick="switchPage('products')">Sản phẩm</li>
+                    <li onclick="switchPage('news')">Tin tức</li>
+                    <li onclick="switchPage('contact')">Liên hệ</li>
+                    <li onclick="switchPage('coins')" style="color: yellow; font-weight: bold;">Nhiệm vụ Xu</li>
+                </ul>
+                <div class="hotline-top">📞 Hotline: 0969283163</div>
+            </div>
+        </div>
+        <!-- Vùng dành cho Admin -->
+        <div class="container" id="admin-panel">
+            CHẾ ĐỘ ADMIN (Chỉ dinhgiassd@gmail.com thấy) | Lượt truy cập: <span id="visitor-count">1</span> | <button onclick="alert('Tính năng đang phát triển!')">Đăng tin</button> | <button onclick="alert('Tính năng đang phát triển!')">Xem User</button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT KHU VỰC ĐỔI TRANG -->
+    <main class="container">
+        <!-- TRANG CHỦ -->
+        <div id="page-home" class="page-section active">
+            <div class="banner-section">
+                <!-- KHU VỰC ẢNH TO (BĂNG CUỘN) -->
+                <div class="main-banner" id="hero-slider">
+                    <img class="slide active" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZU0INtd191rgEoZFwufgN-XoP6D853eLLknOg2k4p_4yf0TZ9StNnPl8L&s=10" alt="Banner 1">
+                    <img class="slide" src="https://play-lh.googleusercontent.com/JVNkIiIR3Zs_vrJhyZSNiPPvDhGyFlvAF63d-D2lz73GtIM4XFyyAjJud21u6hiUP79vgCkOIas=w1296-h2160-rw" alt="Banner 2">
+                    <img class="slide" src="https://s3-api.fpt.vn/fptvn-storage/2025-11-24/1763955513_free-fire-la-gi-6.jpg" alt="Banner 3">
+                </div>
+                <!-- 3 ẢNH NHỎ -->
+                <div class="side-banners">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTSz7nHI6nLQDRCA_VQ1rrWIJLzxkbnXIfKJM1flUeueUHJAd66ThcmnCE&s=10" alt="Side Banner 1">
+                    <img src="https://i.imgur.com/1RUqSKu.jpeg" alt="Side Banner 2">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRB6vv2ORyQL-CDP7BbfZx698EF_tUa9nVJLNZV84OrvaqkNNXLriwP4AYe&s=10" alt="Side Banner 3">
+                </div>
+            </div>
+
+            <div class="features-bar">
+                <div>CHẤT LƯỢNG CAO</div>
+                <div>HỖ TRỢ 24/7</div>
+                <div>BẢO MẬT TUYỆT ĐỐI</div>
+                <div>THANH TOÁN NHANH</div>
+            </div>
+
+            <h2 style="margin-top: 30px;">Sản Phẩm Nổi Bật</h2>
+            <div class="products-grid" id="home-products">
+                <!-- JS Render Products -->
+            </div>
+        </div>
+
+        <!-- TRANG SẢN PHẨM -->
+        <div id="page-products" class="page-section">
+            <div style="margin: 20px 0; padding: 15px; background: white; text-align: center; border: 1px dashed red;">
+                Mã giảm giá: <b>XINCHAOBANMOI</b> (Giảm 5% tối đa 10k) 
+                <button onclick="copyVoucher()">Sao chép</button>
+            </div>
+            <h2>Tất cả sản phẩm</h2>
+            <div class="products-grid" id="all-products">
+                <!-- JS Render Products -->
+            </div>
+        </div>
+
+        <!-- TRANG GIỚI THIỆU -->
+        <div id="page-about" class="page-section">
+            <div class="sub-page-content">
+                <h2>Giới Thiệu</h2>
+                <p>Xin chào! Tôi là <b>ngvanducanh</b>.</p>
+                <p style="margin-top: 15px;">Chào mừng bạn đến với Dashop. Nơi đây chuyên cung cấp các combo leo rank, file hỗ trợ kéo tâm, độ nhạy chuẩn và các tài khoản Free Fire chất lượng nhất.</p>
+                <p style="margin-top: 10px;">Uy tín, Bảo mật, và Nhanh chóng là tiêu chí hàng đầu của chúng tôi!</p>
+            </div>
+        </div>
+
+        <!-- TRANG TIN TỨC -->
+        <div id="page-news" class="page-section">
+            <div class="sub-page-content">
+                <h2>Tin Tức Mới Nhất</h2>
+                <div id="news-board">
+                    <p style="color: #666; font-style: italic;">Chưa có bài viết nào được đăng tải. Hãy chờ admin (ngvanducanh) cập nhật nhé!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANG LIÊN HỆ -->
+        <div id="page-contact" class="page-section">
+            <div class="sub-page-content">
+                <h2>Liên Hệ Với Chúng Tôi</h2>
+                <p style="margin-top: 15px;">Nếu bạn có bất kỳ thắc mắc hay cần hỗ trợ trong quá trình mua hàng, hãy liên hệ ngay qua các kênh sau:</p>
+                <ul style="margin-top: 20px; line-height: 2;">
+                    <li>📧 <b>Email:</b> dinhgiassd@gmail.com</li>
+                    <li>📞 <b>Hotline:</b> 09669283165 (Gọi để được hỗ trợ 24/7)</li>
+                    <li>🌐 <b>Kênh Youtube:</b> <a href="https://www.youtube.com/@ngvanducanh" target="_blank" style="color: blue;">Dashop Channel</a></li>
+                    <li>🎵 <b>TikTok:</b> <a href="https://www.tiktok.com/@ngvanducanh22" target="_blank" style="color: blue;">@ngvanducanh22</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TRANG NHIỆM VỤ XU -->
+        <div id="page-coins" class="page-section">
+            <div class="coin-board">
+                <h3>Số Xu Hiện Có Của Bạn</h3>
+                <div class="coin-amount" id="user-coin-display">5000</div>
+                <p>Dùng xu để quy đổi sản phẩm miễn phí!</p>
+            </div>
+
+            <div class="task-list">
+                <h3>Nhiệm vụ hàng ngày</h3>
+                <div class="task-item" id="task-1">
+                    <span>1. Follow kênh TikTok của dashop (+45.000 xu)</span>
+                    <button class="task-btn" onclick="doTask(1, 'https://www.tiktok.com/@ngvanducanh22', 45000)">Làm ngay</button>
+                    <span class="task-done">✔ Đã xong</span>
+                </div>
+                <div class="task-item" id="task-2">
+                    <span>2. Tim 2 video trên TikTok (+15.000 xu)</span>
+                    <button class="task-btn" onclick="doTask(2, 'https://www.tiktok.com/@ngvanducanh22', 15000)">Làm ngay</button>
+                    <span class="task-done">✔ Đã xong</span>
+                </div>
+                <button style="margin-top:20px; width: 100%; padding: 15px; background: green; color: white; border: none; font-weight: bold; cursor: pointer;" onclick="watchAdAll()">HOÀN THÀNH TẤT CẢ (Xem Quảng Cáo Nhận Thêm Xu)</button>
+            </div>
+
+            <div class="video-ad-container" id="ad-box">
+                <p>Nguồn: ASMobile | Hãy xem hết video để nhận thưởng</p>
+                <iframe width="315" height="560" src="https://www.youtube.com/embed/VYN7iz068e4?autoplay=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen id="ad-video"></iframe>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="ad-progress"></div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 30px;">Quy đổi sản phẩm bằng Xu</h3>
+            <div class="products-grid" id="coin-products">
+                <!-- Render Coin Products -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <p style="color: var(--primary-red); font-weight: bold; font-size: 20px;">Hotline: 09669283165</p>
+            <p>Email: dinhgiassd@gmail.com</p>
+            <div class="footer-social" style="margin-top: 15px;">
+                <a href="https://www.youtube.com/@ngvanducanh" target="_blank" style="margin: 0 10px; font-weight: bold;">Youtube</a> | 
+                <a href="https://www.tiktok.com/@ngvanducanh22" target="_blank" style="margin: 0 10px; font-weight: bold;">TikTok</a> | 
+                <a href="#" style="margin: 0 10px; font-weight: bold;">Zalo</a>
+            </div>
+            <p style="margin-top: 20px; font-size: 12px; color: #777;">© Bản quyền thuộc về dashop | Cung cấp bởi dashop game online</p>
+        </div>
+    </footer>
+
+    <!-- NÚT NỔI & ẢNH NỔI SỰ KIỆN -->
+    <div id="floating-event">
+        <div class="close-event" onclick="closeFloatingEvent(event)">X</div>
+        <img src="https://shopconu.vn/upload/theme/AXMZIC7.png" alt="Sự Kiện Hot" style="width: 130px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);" onclick="alert('Chương trình chưa bắt đầu')">
+    </div>
+
+    <div class="floating-buttons">
+        <a href="tel:09669283165" class="float-btn" title="Gọi ngay">📞</a>
+        <a href="#" class="float-btn float-zalo" title="Zalo của tôi">Z</a>
+        <button class="float-btn" onclick="window.scrollTo(0,0)" title="Về đầu trang">↑</button>
+    </div>
+
+    <!-- MODAL VÒNG QUAY MAY MẮN -->
+    <div id="wheel-modal">
+        <div class="wheel-content">
+            <span class="close-modal" onclick="closeWheelModal()">×</span>
+            <h2 style="color: var(--primary-red); margin-bottom: 20px;">Vòng Quay May Mắn</h2>
+            
+            <div class="wheel-container">
+                <div class="wheel-pointer"></div>
+                <div class="wheel" id="spinning-wheel">
+                    <div class="wheel-text wt-1">100 kc</div>
+                    <div class="wheel-text wt-2">70kc</div>
+                    <div class="wheel-text wt-3">1000kc</div>
+                    <div class="wheel-text wt-4">10.000 kc</div>
+                    <div class="wheel-text wt-5" style="font-size: 10px; text-align:center;">Chúc bạn<br>may mắn</div>
+                </div>
+                <div class="wheel-center"></div>
+            </div>
+
+            <div class="wheel-form">
+                <input type="text" id="wheel-name" placeholder="Tên của bạn">
+                <input type="text" id="wheel-id" placeholder="ID Game FreeFire">
+                <input type="text" id="wheel-code" onclick="autoFillCode()" placeholder="Mã (Nhấn để nhận tự động)" readonly>
+                <button onclick="startSpin()">BẮT ĐẦU QUAY</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ĐĂNG KÝ / ĐĂNG NHẬP -->
+    <div class="modal" id="auth-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeAuthModal()">×</span>
+            <h2 id="auth-title" style="text-align: center; margin-bottom: 20px;">Đăng Nhập</h2>
+            
+            <div id="login-form">
+                <input type="email" id="login-email" placeholder="Email (dinhgiassd@gmail.com = Admin)">
+                <input type="password" id="login-pass" placeholder="Mật khẩu">
+                <button onclick="handleLogin()">Đăng Nhập</button>
+                <div class="switch-auth" onclick="switchAuthMode('register')">Chưa có tài khoản? Đăng ký ngay</div>
+            </div>
+
+            <div id="register-form" style="display: none;">
+                <input type="text" id="reg-name" placeholder="Họ và Tên">
+                <input type="email" id="reg-email" placeholder="Email">
+                <input type="password" id="reg-pass" placeholder="Mật khẩu">
+                
+                <div id="verify-section" style="display: none; background: #f9f9f9; padding: 10px; margin-top: 10px; border: 1px dashed #ccc;">
+                    <p style="font-size: 12px;">Mã xác nhận (Mã giả lập là: 8386110)</p>
+                    <input type="text" id="reg-code" placeholder="Nhập mã xác nhận">
+                    <p id="countdown-text" style="color: red; font-size: 12px;"></p>
+                    <button id="btn-get-code" onclick="startCountdown()" style="background: #333;">Lấy mã xác nhận</button>
+                    <p style="font-size: 12px; color: blue; cursor: pointer; margin-top: 5px; text-decoration: underline;" onclick="alert('Hãy nhập mã 8386110')">Tôi không nhận được mã?</p>
+                </div>
+
+                <button onclick="showVerifyStep()" id="btn-next-reg">Tiếp tục</button>
+                <button onclick="handleRegister()" id="btn-final-reg" style="display: none; background: green;">Hoàn tất Đăng Ký</button>
+
+                <div class="switch-auth" onclick="switchAuthMode('login')">Đã có tài khoản? Đăng nhập</div>
+            </div>
+            
+            <button id="btn-logout" style="display: none; background: #666; margin-top: 20px;" onclick="handleLogout()">Đăng Xuất</button>
+        </div>
+    </div>
+
+    <script>
+        // MÃ THIẾT BỊ RIÊNG CHO MỖI MÁY
+        let deviceCode = localStorage.getItem('deviceCode');
+        if(!deviceCode) {
+            deviceCode = "DASHOP-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+            localStorage.setItem('deviceCode', deviceCode);
+        }
+
+        // KIỂM SOÁT MÀN HÌNH CHỜ (PRELOADER)
+        window.addEventListener('DOMContentLoaded', () => {
+            let percent = 0;
+            let bar = document.getElementById('loading-bar-fill');
+            
+            let loaderInterval = setInterval(() => {
+                percent += Math.floor(Math.random() * 20) + 15;
+                if (percent >= 100) percent = 100;
+                
+                bar.style.width = percent + '%';
+                
+                if (percent === 100) {
+                    clearInterval(loaderInterval);
+                    setTimeout(() => {
+                        document.getElementById('preloader').style.display = 'none';
+                        document.body.classList.remove('loading');
+                        // Hiển thị thông báo quan trọng khi load xong
+                        document.getElementById('welcome-notice').style.display = 'flex';
+                    }, 500); 
+                }
+            }, 250);
+        });
+
+        // Tắt thông báo quan trọng
+        function closeWelcomeNotice() {
+            document.getElementById('welcome-notice').style.display = 'none';
+        }
+
+        // DỮ LIỆU SẢN PHẨM MỚI THEO YÊU CẦU (Xóa các GIF cũ, thêm danh sách mới)
+        const products = [
+            // Các sản phẩm không phải GIF được giữ lại
+            { id: 1, name: "App lấy độ nhạy chuẩn ob54", price: 0, coinPrice: 15000, img: "https://cdn.aptoide.com/imgs/3/0/7/3074264799a7deda30772b4d473de9b7_fgraphic.jpg", link: "https://dinhgiassd-lang.github.io/donhaydashop/" },
+            { id: 2, name: "Combo leo rank sinh tồn", price: 5000, coinPrice: 20000, img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRB6vv2ORyQL-CDP7BbfZx698EF_tUa9nVJLNZV84OrvaqkNNXLriwP4AYe&s=10", link: "#" },
+            { id: 3, name: "Combo leo rank tử chiến", price: 5000, coinPrice: 20000, img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSUybjHTyheo3TFlW1vjmssIF9h-oSBLQXxgJ066bIv-4-pZqdUqRO3Y9dC&s=10", link: "#" },
+            { id: 4, name: "File hổ trợ kéo tâm", price: 20000, coinPrice: 100000, img: "https://i.imgur.com/ZAvIpaS.jpeg", link: "https://drive.google.com/drive/folders/1CdMs-WYswPOG4YJUQ1fW1nk_BiAj-SKV?usp=drive_link" },
+            
+            // CÁC SẢN PHẨM GIF MỚI
+            { id: 5, name: "Nick Free Fire siêu phẩm", price: 259000, coinPrice: 500000, img: "https://khonickgiare.site/uploads/18-06-2026/c6d00dc1-f8ad-4b06-895b-f4fa7c4a7e05.gif", link: "#" },
+            { id: 6, name: "Acc dưới 1M siêu phẩm", price: 899000, coinPrice: 1500000, img: "https://shoptho7mau.com/upload/product/1a51ab46149bebfa126157d59f48fecc.gif", link: "#" },
+            { id: 7, name: "Nick FreeFire dưới 2M siêu phẩm", price: 1899000, coinPrice: 3000000, img: "https://www.shoptquyen.com/upload/product/2487daa29b39cab77581c37c5bdbb9b1.gif", link: "#" },
+            { id: 8, name: "Acc siêu khung hàng tuyển", price: 560000, coinPrice: 900000, img: "https://cdn.m-services.pro/uploads/1783053005736-1fcbd363-0d9e-4f3b-9c7e-43a59aed5336.gif", link: "#" },
+            { id: 9, name: "Túi mù acc", price: 149000, coinPrice: 300000, img: "https://khonickgiare.site/uploads/18-06-2026/1f01a676-9bb8-4d93-bd3c-e150275332ea.gif", link: "#" },
+            { id: 10, name: "Acc FreeFire tự chọn", price: 50000, coinPrice: 150000, img: "https://shopthanthoai.com/upload-usr/images/011.gif", link: "#" },
+            { id: 11, name: "Nick giá gốc xả kho", price: 80000, coinPrice: 200000, img: "https://s3.hcm-1.cloud.cmctelecom.vn/bannick/photos/shares/bai_viet/bannickfreefire/danh-muc-ban-acc-free-fire/66eada27c8b66.gif", link: "#" },
+            { id: 12, name: "Acc FreeFire từ 7M – 15M", price: 12999000, coinPrice: 20000000, img: "https://shoptyseiseiff.com.vn/uploads/15.gif", link: "#" },
+            { id: 13, name: "Acc từ 1M đến 10M", priceStr: "1.000.000đ – 10.000.000đ", price: 1000000, coinPrice: 5000000, img: "https://shopacc89.com/upload/category/category92SQK7.gif", link: "#" },
+            { id: 14, name: "Nick FreeFire dưới 1M siêu phẩm", price: 990000, coinPrice: 1800000, img: "https://shopacc89.com/upload/category/category4DXLI1.gif", link: "#" },
+            { id: 15, name: "Túi mù acc Vip 8", price: 45000, coinPrice: 120000, img: "https://tuimuffngon.com/assets/product/c4c9676fb45d0ef91b8e25296f276cd2.gif", link: "#" },
+            { id: 16, name: "Hộp màu vip 6 49k", price: 49000, coinPrice: 130000, img: "https://tuimuffngon.com/assets/product/7f47a526267f5357b9206e9a822b68f3.gif", link: "#" },
+            { id: 17, name: "Nick Liên Quân Vip tự chọn", price: 49000, coinPrice: 130000, img: "https://shopthandong.com/assets/upload/game/9618155e0810001eba62f8c72437f86d.gif", link: "#" },
+            { id: 18, name: "Túi mùa acc chỉ với giá 499k", price: 499000, coinPrice: 1000000, img: "https://cdn.m-services.pro/uploads/1783053005761-75d48f05-e2e4-45f7-aabe-3b50990db26a.gif", link: "#" },
+            
+            // VÒNG QUAY MAY MẮN CHUYÊN BIỆT
+            { id: 19, name: "Vòng quay kim cương giá 19k", price: 19000, coinPrice: 50000, img: "https://shopgarena.net/wp-content/uploads/2026/03/Vong-quay-9999-kim-cuong-1.gif", link: "#", isWheel: true }
+        ];
+
+        // KHỞI TẠO HỆ THỐNG
+        let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+        let currentCoins = parseInt(localStorage.getItem('coins')) || 5000; 
+        let cartItems = JSON.parse(localStorage.getItem('cart')) || [];
+
+        window.onload = () => {
+            updateUIBasedOnUser();
+            renderProducts();
+            renderCoinProducts();
+            updateCoinDisplay();
+            document.getElementById('cart-counter').innerText = cartItems.length;
+            
+            let visits = parseInt(localStorage.getItem('visits')) || 0;
+            visits++;
+            localStorage.setItem('visits', visits);
+            document.getElementById('visitor-count').innerText = visits;
+
+            initSlider(); 
+        };
+
+        // Đóng ảnh sự kiện góc trái
+        function closeFloatingEvent(event) {
+            event.stopPropagation();
+            document.getElementById('floating-event').style.display = 'none';
+        }
+
+        // Click Xem Nhanh Sản Phẩm (Mắt 👁)
+        function quickViewProduct(id) {
+            let product = products.find(p => p.id === id);
+            if(product) {
+                let priceDisplay = product.priceStr ? product.priceStr : (product.price === 0 ? 'Miễn phí' : product.price.toLocaleString() + ' đ');
+                alert(`📋 THÔNG TIN SẢN PHẨM:\n- Tên: ${product.name}\n- Giá bán: ${priceDisplay}\n- Giá quy đổi: ${product.coinPrice.toLocaleString()} Xu`);
+            }
+        }
+
+        function viewCart() {
+            if(cartItems.length === 0) alert("🛒 Giỏ hàng của bạn hiện đang trống!");
+            else alert(`🛒 Giỏ hàng của bạn đang có ${cartItems.length} sản phẩm.\nHãy chuyển đến trang thanh toán để tiếp tục!`);
+        }
+
+        function initSlider() {
+            let currentSlide = 0;
+            const slides = document.querySelectorAll('#hero-slider .slide');
+            if(slides.length === 0) return;
+            setInterval(() => {
+                slides[currentSlide].classList.remove('active');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }, 3000); 
+        }
+
+        // RENDER SẢN PHẨM HTML
+        function renderProducts() {
+            let html = products.map(p => {
+                let priceDisplay = p.priceStr ? p.priceStr : (p.price === 0 ? 'Miễn phí' : p.price.toLocaleString() + ' đ');
+                return `
+                <div class="product-card">
+                    <button class="view-btn" title="Xem nhanh" onclick="quickViewProduct(${p.id})">👁</button>
+                    <img src="${p.img}" alt="${p.name}">
+                    <div class="product-info">
+                        <div class="product-name">${p.name}</div>
+                        <div class="product-price">${priceDisplay}</div>
+                    </div>
+                    <div class="buy-btn-container">
+                        <button class="buy-btn" onclick="fakeTransaction(${p.id}, 'money')">Mua ngay</button>
+                        <button style="margin-top:5px; background: transparent; border: 1px solid red; color: red; padding: 5px; border-radius: 5px; cursor: pointer;" onclick="addToCart(${p.id})">Thêm Giỏ Hàng</button>
+                    </div>
+                </div>
+            `}).join('');
+            document.getElementById('home-products').innerHTML = html;
+            document.getElementById('all-products').innerHTML = html;
+        }
+
+        function renderCoinProducts() {
+            let html = products.map(p => `
+                <div class="product-card">
+                    <img src="${p.img}" alt="${p.name}">
+                    <div class="product-info">
+                        <div class="product-name">${p.name}</div>
+                        <div class="product-price" style="color: #ff9900;">${p.coinPrice.toLocaleString()} Xu</div>
+                    </div>
+                    <div class="buy-btn-container" style="bottom: 0;">
+                        <button class="buy-btn" style="background: #ff9900;" onclick="fakeTransaction(${p.id}, 'coin')">Đổi Bằng Xu</button>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('coin-products').innerHTML = html;
+        }
+
+        function addToCart(id) {
+            cartItems.push(id);
+            localStorage.setItem('cart', JSON.stringify(cartItems));
+            document.getElementById('cart-counter').innerText = cartItems.length;
+            alert("Đã thêm vào giỏ hàng thành công!");
+        }
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        // TÀI KHOẢN
+        function openAuthModal() {
+            document.getElementById('auth-modal').style.display = 'flex';
+            if(currentUser) {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('register-form').style.display = 'none';
+                document.getElementById('btn-logout').style.display = 'block';
+                document.getElementById('auth-title').innerText = "Tài khoản của bạn";
+            }
+        }
+        function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
+        function switchAuthMode(mode) {
+            if(mode === 'login') {
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('register-form').style.display = 'none';
+                document.getElementById('auth-title').innerText = "Đăng Nhập";
+            } else {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('register-form').style.display = 'block';
+                document.getElementById('auth-title').innerText = "Đăng Ký";
+            }
+        }
+
+        function showVerifyStep() {
+            let name = document.getElementById('reg-name').value;
+            if(!name) return alert("Vui lòng nhập tên!");
+            document.getElementById('verify-section').style.display = 'block';
+            document.getElementById('btn-next-reg').style.display = 'none';
+            document.getElementById('btn-final-reg').style.display = 'block';
+        }
+
+        let isCountdown = false;
+        function startCountdown() {
+            if(isCountdown) return;
+            isCountdown = true;
+            let time = 5;
+            let btn = document.getElementById('btn-get-code');
+            let txt = document.getElementById('countdown-text');
+            btn.disabled = true;
+            let timer = setInterval(() => {
+                txt.innerText = `Chờ ${time}s để nhận mã...`;
+                time--;
+                if(time < 0) {
+                    clearInterval(timer);
+                    txt.innerText = "Mã của bạn là: 8386110";
+                    btn.innerText = "Sao chép mã";
+                    btn.disabled = false;
+                    btn.onclick = () => { navigator.clipboard.writeText("8386110"); alert("Đã copy mã"); }
+                }
+            }, 1000);
+        }
+
+        function handleRegister() {
+            let name = document.getElementById('reg-name').value;
+            let email = document.getElementById('reg-email').value;
+            let code = document.getElementById('reg-code').value;
+            
+            if(code !== "8386110") return alert("Mã xác nhận sai!");
+            let users = JSON.parse(localStorage.getItem('usersDB')) || [];
+            if(users.find(u => u.name === name)) return alert("Tên này đã tồn tại, vui lòng chọn tên khác!");
+            
+            let newUser = { name: name, email: email, role: email === 'dinhgiassd@gmail.com' ? 'admin' : 'user' };
+            users.push(newUser);
+            localStorage.setItem('usersDB', JSON.stringify(users));
+            
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+            currentUser = newUser;
+            alert("Đăng ký thành công!");
+            closeAuthModal();
+            updateUIBasedOnUser();
+        }
+
+        function handleLogin() {
+            let email = document.getElementById('login-email').value;
+            let users = JSON.parse(localStorage.getItem('usersDB')) || [];
+            let user = users.find(u => u.email === email);
+            
+            if(email === 'dinhgiassd@gmail.com') {
+                 user = { name: "Gia Đình (Admin)", email: email, role: 'admin' };
+            }
+
+            if(user) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                currentUser = user;
+                alert("Đăng nhập thành công!");
+                closeAuthModal();
+                updateUIBasedOnUser();
+            } else {
+                alert("Tài khoản chưa tồn tại, vui lòng đăng ký!");
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            closeAuthModal();
+            updateUIBasedOnUser();
+            switchAuthMode('login');
+        }
+
+        function updateUIBasedOnUser() {
+            let display = document.getElementById('user-display-name');
+            let adminPanel = document.getElementById('admin-panel');
+            
+            if(currentUser) {
+                display.innerHTML = `Tài khoản<br><b>${currentUser.name}</b>`;
+                if(currentUser.role === 'admin') adminPanel.style.display = 'block';
+                else adminPanel.style.display = 'none';
+            } else {
+                display.innerHTML = `Tài khoản<br><b>Khách</b>`;
+                adminPanel.style.display = 'none';
+            }
+        }
+
+        // GIAO DỊCH & VÒNG QUAY MAY MẮN
+        function fakeTransaction(prodId, type) {
+            let product = products.find(p => p.id === prodId);
+            if(!product) return;
+
+            // KIỂM TRA NẾU LÀ SẢN PHẨM VÒNG QUAY (Đặc biệt)
+            if(product.isWheel && type === 'money') {
+                if(!currentUser) {
+                    alert("Vui lòng đăng nhập hoặc đăng ký tài khoản trước khi tham gia!");
+                    openAuthModal();
+                    return;
+                }
+                openWheelModal();
+                return;
+            }
+
+            if(type === 'coin') {
+                if(confirm(`Xác nhận đổi ${product.name} với giá ${product.coinPrice} xu?`)) {
+                    if(currentCoins >= product.coinPrice) {
+                        currentCoins -= product.coinPrice;
+                        localStorage.setItem('coins', currentCoins);
+                        updateCoinDisplay();
+                        alert("Đổi thành công! Chuyển hướng tới sản phẩm...");
+                        if(product.link !== "#") window.open(product.link, '_blank');
+                    } else {
+                        alert("Bạn không đủ xu! Vui lòng làm nhiệm vụ.");
+                    }
+                }
+            } else {
+                if(product.price === 0) {
+                    alert("Thanh toán thành công (Miễn phí)!");
+                    if(product.link !== "#") window.open(product.link, '_blank');
+                } else {
+                    alert(`GIAO DỊCH MÔ PHỎNG:\nVui lòng chuyển khoản ${product.price.toLocaleString()}đ\nSTK: 8848798239 - BIDV\nTên: NGUYENVANLUOWNG\nNội dung: Mua ${product.name}`);
+                    setTimeout(() => {
+                        let cf = confirm("Giả lập: Bạn đã chuyển khoản thành công?");
+                        if(cf && product.link !== "#") window.open(product.link, '_blank');
+                    }, 1000);
+                }
+            }
+        }
+
+        // LOGIC VÒNG QUAY MAY MẮN
+        function openWheelModal() {
+            document.getElementById('wheel-modal').style.display = 'flex';
+            if(currentUser) document.getElementById('wheel-name').value = currentUser.name;
+        }
+        function closeWheelModal() {
+            document.getElementById('wheel-modal').style.display = 'none';
+        }
+        function autoFillCode() {
+            document.getElementById('wheel-code').value = deviceCode;
+        }
+        
+        let isSpinning = false;
+        function startSpin() {
+            let name = document.getElementById('wheel-name').value;
+            let idGame = document.getElementById('wheel-id').value;
+            let code = document.getElementById('wheel-code').value;
+
+            if(!name || !idGame || !code) {
+                alert("Vui lòng nhập đầy đủ Tên, ID Game và nhấn vào Mã để lấy mã tự động!");
+                return;
+            }
+
+            if(isSpinning) return;
+            isSpinning = true;
+
+            let wheel = document.getElementById('spinning-wheel');
+            let randomDegree = Math.floor(Math.random() * 360) + 3600; // Quay ít nhất 10 vòng
+            wheel.style.transform = `rotate(${randomDegree}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                alert("Chương trình chưa bắt đầu");
+                // Reset vòng quay
+                wheel.style.transition = 'none';
+                wheel.style.transform = `rotate(${randomDegree % 360}deg)`;
+                setTimeout(() => wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)', 50);
+            }, 4000);
+        }
+
+        // HỆ THỐNG XU
+        function updateCoinDisplay() {
+            document.getElementById('user-coin-display').innerText = currentCoins.toLocaleString();
+            localStorage.setItem('coins', currentCoins);
+        }
+
+        function doTask(taskId, link, reward) {
+            window.open(link, '_blank');
+            setTimeout(() => {
+                currentCoins += reward;
+                updateCoinDisplay();
+                alert(`Chúc mừng! Bạn nhận được ${reward} xu.`);
+                let taskDiv = document.getElementById('task-' + taskId);
+                taskDiv.querySelector('button').style.display = 'none';
+                taskDiv.querySelector('.task-done').style.display = 'inline-block';
+            }, 2000); 
+        }
+
+        function watchAdAll() {
+            document.getElementById('ad-box').style.display = 'block';
+            let progress = document.getElementById('ad-progress');
+            let width = 0;
+            let interval = setInterval(() => {
+                width += (100 / 30); 
+                progress.style.width = width + '%';
+                if(width >= 100) {
+                    clearInterval(interval);
+                    document.getElementById('ad-box').style.display = 'none';
+                    currentCoins += 100000; 
+                    updateCoinDisplay();
+                    alert("Đã xem xong quảng cáo! Nhận được Xu!");
+                    document.querySelectorAll('.task-btn').forEach(btn => btn.style.display = 'none');
+                    document.querySelectorAll('.task-done').forEach(btn => btn.style.display = 'inline-block');
+                }
+            }, 1000);
+        }
+
+        function copyVoucher() {
+            navigator.clipboard.writeText("XINCHAOBANMOI");
+            alert("Đã sao chép mã giảm giá!");
+        }
+
+    </script>
+</body>
+</html>
